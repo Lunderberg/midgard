@@ -21,6 +21,7 @@ public:
 private:
   ServerResponse request_maythrow(const std::string& command);
   json get_food_dist() const;
+  void reset_world();
 
   WorldSim& sim;
 };

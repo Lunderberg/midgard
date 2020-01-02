@@ -55,7 +55,8 @@ void WebServer::on_http(websocketpp::connection_hdl hdl) {
   }
 
 
-  std::string filename = root_path + "/web-serve" + con->get_resource();
+  //std::string filename = root_path + "/web-serve" + con->get_resource();
+  std::string filename = root_path + "/../web-serve" + con->get_resource();
   if(filename.back() == '/') {
     filename += "index.html";
   }

@@ -4,7 +4,19 @@ var world = (function() {
     var total_bytes_received = 0;
 
     function init() {
+        connect_callbacks();
         connect_socket();
+    }
+
+    function connect_callbacks() {
+        var all_callbacks = [
+            ['iterate-button', 'click', iterate],
+            ['reset-world-button', 'click', reset_world],
+        ];
+
+        all_callbacks.forEach(function(cb) {
+            document.getElementById(cb[0]).addEventListener(cb[1], cb[2]);
+        });
     }
 
     function display_websocket_state(state) {
@@ -76,8 +88,32 @@ var world = (function() {
     }
 
     function display_food_dist(food) {
-        console.log(food);
-        document.getElementById('temp-display').value = food;
+        var canvas = document.getElementById('map-display');
+        var ctx = canvas.getContext('2d');
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        var x_scale = canvas.width / food['width'];
+        var y_scale = canvas.height / food['height'];
+
+        food['food'].forEach(function(col,x) {
+            col.forEach(function(val, y) {
+                if(val != 0) {
+                    ctx.fillStyle = `rgb(${255 - 255*val}, 255, ${255 - 255*val})`
+                    ctx.fillRect(x*x_scale, y*y_scale, x_scale, y_scale);
+                }
+            });
+        });
+    }
+
+    function iterate() {
+        send_message({'iterate_n_steps': 1,
+                      'food_dist_requested': true});
+    }
+
+    function reset_world() {
+        send_message({'reset_world': true,
+                      'food_dist_requested': true});
     }
 
     return {init: init};

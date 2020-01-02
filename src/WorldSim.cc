@@ -29,14 +29,15 @@ void WorldSim::iterate() {
 
   for(int x=0; x<width; x++) {
     for(int y=0; y<height; y++) {
-      double neighbor_average = (
-        prev_food.at(food_index(x-1,y-1)) +
-        prev_food.at(food_index(x-1,y+1)) +
-        prev_food.at(food_index(x+1,y-1)) +
-        prev_food.at(food_index(x+1,y+1))
-      ) / 4;
+      double ave_with_neighbors = (
+        prev_food.at(food_index(x,y)) +
+        prev_food.at(food_index(x+1,y)) +
+        prev_food.at(food_index(x-1,y)) +
+        prev_food.at(food_index(x,y-1)) +
+        prev_food.at(food_index(x,y+1))
+      ) / 5;
 
-      food.at(food_index(x,y)) = neighbor_average;
+      food.at(food_index(x,y)) = ave_with_neighbors;
     }
   }
 }
