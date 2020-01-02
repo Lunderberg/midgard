@@ -8,7 +8,9 @@ using nlohmann::json;
 
 #include "ProgramPath.hh"
 
-WebServer::WebServer() {
+WebServer::WebServer(WorldSim& sim)
+  : controller(sim) {
+
   root_path = program_path();
 
   server.set_http_handler(
@@ -20,8 +22,21 @@ WebServer::WebServer() {
       on_first_message(hdl, msg);
     });
 
-  // server.clear_access_channels(websocketpp::log::alevel::all);
-  // server.clear_error_channels(websocketpp::log::elevel::all);
+  server.clear_access_channels(websocketpp::log::alevel::all);
+  server.clear_error_channels(websocketpp::log::elevel::all);
+}
+
+WebServer::~WebServer() {
+  // Need to make sure that it closes cleanly, but Ctrl-C interrupts
+  // the server.run() command which handles the closing.  Will need to
+  // find a better way to handle it in the future.
+
+
+  // server.stop_listening();
+  // for(auto& handle : live_connections) {
+  //   websocketpp::lib::error_code ec;
+  //   server.close(handle, websocketpp::close::status::going_away, "", ec);
+  // }
 }
 
 void WebServer::start(int port) {
@@ -79,18 +94,18 @@ void WebServer::on_first_message(websocketpp::connection_hdl handle,
 
 void WebServer::on_regular_message(websocketpp::connection_hdl handle,
                                     server_t::message_ptr msg) {
-  std::string response = "Message received";
-  server.send(handle, response, websocketpp::frame::opcode::text);
+  // std::string response = "Message received";
+  // server.send(handle, response, websocketpp::frame::opcode::text);
 
-  //auto response = controller.request(msg->get_payload());
+  auto response = controller.request(msg->get_payload());
 
 
-  // if(response.response.size()) {
-  //   server.send(handle, response.response, websocketpp::frame::opcode::text);
-  // }
-  // if(response.broadcast.size()) {
-  //   broadcast_all(response.broadcast);
-  // }
+  if(response.response.size()) {
+    server.send(handle, response.response, websocketpp::frame::opcode::text);
+  }
+  if(response.broadcast.size()) {
+    broadcast_all(response.broadcast);
+  }
 }
 
 void WebServer::broadcast_all(const std::string& message) {

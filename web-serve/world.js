@@ -67,7 +67,17 @@ var world = (function() {
         var parsed = JSON.parse(message);
         if('authenticated' in parsed) {
             display_websocket_state('Connected');
+            send_message({'food_dist_requested': true});
         }
+
+        if('food_dist' in parsed) {
+            display_food_dist(parsed['food_dist']);
+        }
+    }
+
+    function display_food_dist(food) {
+        console.log(food);
+        document.getElementById('temp-display').value = food;
     }
 
     return {init: init};

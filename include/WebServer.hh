@@ -6,11 +6,17 @@
 #include <websocketpp/config/asio_no_tls.hpp>
 #include <websocketpp/server.hpp>
 
+#include "WorldController.hh"
+
+class WorldSim;
+
 class WebServer {
   typedef websocketpp::server<websocketpp::config::asio> server_t;
 
 public:
-  WebServer();
+  WebServer(WorldSim& sim);
+  ~WebServer();
+
   void start(int port);
 
 private:
@@ -26,4 +32,6 @@ private:
   server_t server;
   std::vector<websocketpp::connection_hdl> live_connections;
   std::string root_path;
+
+  WorldController controller;
 };

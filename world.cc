@@ -2,8 +2,11 @@
 #include <sstream>
 
 #include "WebServer.hh"
+#include "WorldSim.hh"
 
 int main() {
-  WebServer server;
+  WorldSim sim(1000, 1000);
+
+  WebServer server(sim);
   server.start(10101);
 }
