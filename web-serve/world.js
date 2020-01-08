@@ -107,7 +107,8 @@ var world = (function() {
     }
 
     function iterate() {
-        send_message({'iterate_n_steps': 1,
+        var num_iter = +document.getElementById('num-iterations').value;
+        send_message({'iterate_n_steps': num_iter,
                       'food_dist_requested': true});
     }
 

@@ -43,6 +43,7 @@ void WebServer::start(int port) {
   server.init_asio();
   server.listen(port);
   server.start_accept();
+  do_periodic_check();
   server.run();
 }
 
@@ -95,14 +96,35 @@ void WebServer::on_first_message(websocketpp::connection_hdl handle,
 
 void WebServer::on_regular_message(websocketpp::connection_hdl handle,
                                     server_t::message_ptr msg) {
-  // std::string response = "Message received";
-  // server.send(handle, response, websocketpp::frame::opcode::text);
+  auto response = controller.request(msg->get_payload(), handle);
+  send_response(response);
+}
 
-  auto response = controller.request(msg->get_payload());
 
+void WebServer::do_periodic_check() {
+  server.set_timer(
+    100,
+    [this](const websocketpp::lib::error_code& ec) {
+      if(ec) {
+        return;
+      }
 
+      while(true) {
+        auto response = controller.update_check();
+        if(response.response.size() || response.broadcast.size()) {
+          send_response(response);
+        } else {
+          break;
+        }
+      }
+
+      do_periodic_check();
+    });
+}
+
+void WebServer::send_response(const ServerResponse& response) {
   if(response.response.size()) {
-    server.send(handle, response.response, websocketpp::frame::opcode::text);
+    server.send(response.respond_to, response.response, websocketpp::frame::opcode::text);
   }
   if(response.broadcast.size()) {
     broadcast_all(response.broadcast);
