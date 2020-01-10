@@ -9,7 +9,7 @@ using nlohmann::json;
 #include "ProgramPath.hh"
 
 WebServer::WebServer(WorldSim& sim)
-  : controller(sim) {
+  : server_running(false), stop_periodic_check(false), controller(sim) {
 
   root_path = program_path();
 
@@ -24,26 +24,32 @@ WebServer::WebServer(WorldSim& sim)
 
   server.clear_access_channels(websocketpp::log::alevel::all);
   server.clear_error_channels(websocketpp::log::elevel::all);
+  server.set_reuse_addr(true);
 }
 
 WebServer::~WebServer() {
-  // Need to make sure that it closes cleanly, but Ctrl-C interrupts
-  // the server.run() command which handles the closing.  Will need to
-  // find a better way to handle it in the future.
-
-
-  // server.stop_listening();
-  // for(auto& handle : live_connections) {
-  //   websocketpp::lib::error_code ec;
-  //   server.close(handle, websocketpp::close::status::going_away, "", ec);
-  // }
+  server.stop_listening();
+  for(auto& handle : live_connections) {
+    websocketpp::lib::error_code ec;
+    server.close(handle, websocketpp::close::status::going_away, "", ec);
+  }
+  stop_periodic_check = true;
+  thread.join();
 }
 
 void WebServer::start(int port) {
-  server.init_asio();
-  server.listen(port);
-  server.start_accept();
-  do_periodic_check();
+  if(!server_running) {
+    server_running = true;
+
+    server.init_asio();
+    server.listen(port);
+    server.start_accept();
+    do_periodic_check();
+    thread = std::thread([this](){ run(); });
+  }
+}
+
+void WebServer::run() {
   server.run();
 }
 
@@ -105,7 +111,7 @@ void WebServer::do_periodic_check() {
   server.set_timer(
     100,
     [this](const websocketpp::lib::error_code& ec) {
-      if(ec) {
+      if(ec || stop_periodic_check) {
         return;
       }
 

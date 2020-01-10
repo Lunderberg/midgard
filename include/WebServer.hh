@@ -1,6 +1,8 @@
 #pragma once
 
+#include <atomic>
 #include <string>
+#include <thread>
 #include <vector>
 
 #include <websocketpp/config/asio_no_tls.hpp>
@@ -20,6 +22,7 @@ public:
   void start(int port);
 
 private:
+  void run();
   void on_http(websocketpp::connection_hdl hdl);
 
   void do_periodic_check();
@@ -31,8 +34,12 @@ private:
   void send_response(const ServerResponse& response);
   void broadcast_all(const std::string& message);
 
+  std::thread thread;
   server_t server;
   std::vector<websocketpp::connection_hdl> live_connections;
+  std::atomic_bool server_running;
+  std::atomic_bool stop_periodic_check;
+
   std::string root_path;
 
   WorldController controller;
