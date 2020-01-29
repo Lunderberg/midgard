@@ -230,19 +230,28 @@ void GrassyBitfield::determine_new_growth(
   auto info = unpack_bitfield_key(key);
   std::uint32_t full_grid_size = 1UL << (3*num_layers);
 
-  // Find the grid on the same level or higher that contains the
-  // specified point.
-  auto find_field = [&](std::uint32_t x, std::uint32_t y) {
+  auto get_address_wrap = [&](std::uint32_t x, std::uint32_t y) {
     // If it is off the edge and edge wrapping is disabled, treat as
     // empty.
     if((x >= full_grid_size || y >= full_grid_size) && !this->edge_wrap) {
-      return Bitfield(0);
+      return std::uint64_t(-1);
     }
+
     // Adjust coordinate in case it is off the edge.
     x = (x + full_grid_size) % full_grid_size;
     y = (y + full_grid_size) % full_grid_size;
 
-    auto address = get_address(x,y);
+    return get_address(x,y);
+  };
+
+  // Find the grid on the same level or higher that contains the
+  // specified point.
+  auto find_field = [&](std::uint32_t x, std::uint32_t y) {
+    auto address = get_address_wrap(x,y);
+    if(address==-1UL) {
+      return Bitfield(0);
+    }
+
     for(unsigned int layer=info.layer; layer<this->num_layers; layer++) {
       auto key = get_bitfield_key(address, layer);
       if(bitfields.count(key)) {
@@ -266,22 +275,22 @@ void GrassyBitfield::determine_new_growth(
     // Recursion is needed if the bitfield exists, or if any of its
     // subfields exists, or if any of its neighbors' subfields exist.
     auto info = unpack_bitfield_key(key);
-    auto left_field = get_bitfield_key(get_address(info.x_min-1,
+    auto left_field = get_bitfield_key(get_address_wrap(info.x_min-1,
                                                    info.y_min),
                                        info.layer);
-    auto right_field = get_bitfield_key(get_address(info.x_min+info.field_width,
+    auto right_field = get_bitfield_key(get_address_wrap(info.x_min+info.field_width,
                                                     info.y_min),
                                         info.layer);
-    auto down_field = get_bitfield_key(get_address(info.x_min,
+    auto down_field = get_bitfield_key(get_address_wrap(info.x_min,
                                                    info.y_min+info.field_width),
                                        info.layer);
-    auto up_field = get_bitfield_key(get_address(info.x_min,info.y_min-1),
+    auto up_field = get_bitfield_key(get_address_wrap(info.x_min,info.y_min-1),
                                      info.layer);
     return (exists_or_has_subfields(key) ||
-            exists_or_has_subfields(left_field) ||
-            exists_or_has_subfields(right_field) ||
-            exists_or_has_subfields(up_field) ||
-            exists_or_has_subfields(down_field));
+            (left_field!=-1UL && exists_or_has_subfields(left_field)) ||
+            (right_field!=-1UL && exists_or_has_subfields(right_field)) ||
+            (up_field!=-1UL && exists_or_has_subfields(up_field)) ||
+            (down_field!=-1UL && exists_or_has_subfields(down_field)));
   };
 
 
@@ -349,7 +358,6 @@ void GrassyBitfield::determine_new_growth(
           auto y = subinfo.y_min;
           for(std::uint32_t x = subinfo.x_min; x<subinfo.x_min+subinfo.field_width; x += 8) {
             auto new_field = get_bitfield_key(x, y, subinfo.layer);
-            //output[new_field] |= Bitfield(0x00000000000000ff);
             output[new_field] |= Bitfield(0xff00000000000000);
           }
         }
@@ -359,7 +367,6 @@ void GrassyBitfield::determine_new_growth(
           auto y = subinfo.y_min + subinfo.field_width - 1;
           for(std::uint32_t x = subinfo.x_min; x<subinfo.x_min+subinfo.field_width; x += 8) {
             auto new_field = get_bitfield_key(x, y, subinfo.layer);
-            //output[new_field] |= Bitfield(0xff00000000000000);
             output[new_field] |= Bitfield(0x00000000000000ff);
           }
         }
