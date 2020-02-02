@@ -91,18 +91,30 @@ var world = (function() {
         var canvas = document.getElementById('map-display');
         var ctx = canvas.getContext('2d');
 
+        var dummy = document.createElement('canvas');
+        dummy.width = 8;
+        dummy.height = 8;
+        var dummy_ctx = dummy.getContext('2d');
+
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.imageSmoothingEnabled = false;
 
-        var x_scale = canvas.width / food['width'];
-        var y_scale = canvas.height / food['height'];
+        var x_scale = canvas.width / food['size'];
+        var y_scale = canvas.height / food['size'];
 
-        food['food'].forEach(function(col,x) {
-            col.forEach(function(val, y) {
-                if(val != 0) {
-                    ctx.fillStyle = `rgb(${255 - 255*val}, 255, ${255 - 255*val})`
-                    ctx.fillRect(x*x_scale, y*y_scale, x_scale, y_scale);
+        food['food_fields'].forEach(field => {
+            for(var i=0; i<8; i++) {
+                for(var j=0; j<8; j++) {
+                    var style = field.values[i][j] ? '#336600' : 'White';
+                    dummy_ctx.fillStyle = style;
+                    dummy_ctx.fillRect(j, 7-i, 1, 1);
                 }
-            });
+            }
+            console.log(canvas.height - field.y_min*y_scale);
+            ctx.drawImage(dummy,
+                          field.x_min*x_scale,
+                          canvas.height - field.y_min*y_scale-1,
+                          field.width*x_scale, -field.width*y_scale);
         });
     }
 

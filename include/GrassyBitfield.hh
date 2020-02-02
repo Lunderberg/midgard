@@ -25,12 +25,15 @@ public:
   GrassyBitfield(unsigned int num_layers, bool initial_value=false,
                  bool edge_wrap=true);
 
-  bool get_val(std::uint32_t x, std::uint32_t y);
+  bool get_val(std::uint32_t x, std::uint32_t y) const;
   void set_val(std::uint32_t x, std::uint32_t y, bool val);
 
   void growth_iteration();
 
   std::vector<DrawField> get_draw_fields() const;
+
+  unsigned int get_size() const;
+  unsigned int get_num_layers() const { return num_layers; }
 
 private:
   void determine_new_growth(

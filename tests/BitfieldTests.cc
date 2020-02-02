@@ -63,13 +63,24 @@ TEST(BitfieldTests, GrassGrowth) {
   field.set_val(7, 36,true);
   field.set_val(48, 36, true);
 
+  // field.set_val(16,0,true);
+  // field.set_val(48,63,true);
+  // field.set_val(0,48,true);
+  // field.set_val(63,16,true);
+
   for(int x=24; x<32; x++) {
     for(int y=16; y<24; y++) {
       field.set_val(x,y,true);
     }
   }
 
-  for(int i=0; i<10; i++) {
+  // for(int x=8; x<16; x++) {
+  //   for(int y=0; y<8; y++) {
+  //     field.set_val(x,y,true);
+  //   }
+  // }
+
+  for(int i=0; i<20; i++) {
     std::cout << "Iteration: " << i << std::endl;
     std::cout << std::string(73, '-') << std::endl;
     for(int y=63; y>=0; y--) {

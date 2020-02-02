@@ -122,29 +122,22 @@ void WorldController::broadcast_map_update() {
 json WorldController::get_food_dist() const {
   json output;
 
-  int width = sim.GetWidth();
-  int height = sim.GetHeight();
+  output["size"] = sim.GetSize();
 
-  output["width"] = width;
-  output["height"] = height;
-
-  std::vector<std::vector<double> > food;
-  food.reserve(width);
-
-  for(int x=0; x<sim.GetWidth(); x++) {
-    std::vector<double> col;
-    col.reserve(height);
-
-    for(int y=0; y<sim.GetHeight(); y++) {
-      col.push_back(sim.GetFoodAt(x,y));
-    }
-    food.push_back(col);
+  std::vector<json> food_fields;
+  for(const auto& field : sim.GetFoodDrawFields()) {
+    json packed;
+    packed["x_min"] = field.x_min;
+    packed["y_min"] = field.y_min;
+    packed["width"] = field.width;
+    packed["values"] = field.values;
+    food_fields.push_back(packed);
   }
-  output["food"] = food;
+  output["food_fields"] = food_fields;
 
   return output;
 }
 
 void WorldController::reset_world() {
-  sim = WorldSim(sim.GetWidth(), sim.GetHeight());
+  sim = WorldSim(sim.GetNumLayers());
 }

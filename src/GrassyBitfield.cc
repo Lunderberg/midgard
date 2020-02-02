@@ -120,8 +120,12 @@ GrassyBitfield::GrassyBitfield(unsigned int num_layers, bool initial_value,
   bitfields[top_addr] = initial_value ? -1L : 0;
 }
 
+unsigned int GrassyBitfield::get_size() const {
+  return 1 << (3*num_layers);
+}
 
-bool GrassyBitfield::get_val(std::uint32_t x, std::uint32_t y) {
+
+bool GrassyBitfield::get_val(std::uint32_t x, std::uint32_t y) const {
   auto address = get_address(x,y);
 
   // Start at the lowest possible layer, then walk up to the topmost layer.
@@ -129,7 +133,7 @@ bool GrassyBitfield::get_val(std::uint32_t x, std::uint32_t y) {
     auto key = get_bitfield_key(address, layer);
     if(bitfields.count(key)) {
       auto loc = get_bitfield_loc(address, layer);
-      return bitfields[key].test(loc);
+      return bitfields.at(key).test(loc);
     }
   }
 

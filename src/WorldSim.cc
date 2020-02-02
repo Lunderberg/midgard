@@ -1,43 +1,29 @@
 #include "WorldSim.hh"
 
-WorldSim::WorldSim(int width, int height)
-  : food(width*height, 0), width(width), height(height) {
+WorldSim::WorldSim(int num_layers, int random_seed)
+  : food(num_layers), generator(random_seed) {
   initial_food_distribution();
 }
 
-unsigned int WorldSim::food_index(int x, int y) const {
-  x = ((x%width) + width) % width;
-  y = ((y%height) + height) % height;
-
-  return y*width + x;
-}
-
-double& WorldSim::food_at(int x, int y) {
-  return food.at(food_index(x,y));
-}
-
 double WorldSim::GetFoodAt(int x, int y) const {
-  return food.at(food_index(x,y));
+  return food.get_val(x,y);
+}
+
+std::vector<GrassyBitfield::DrawField> WorldSim::GetFoodDrawFields() const {
+  return food.get_draw_fields();
 }
 
 void WorldSim::initial_food_distribution() {
-  food_at(width/2, height/2) = 1;
+  int num_seeds = 10;
+  auto size = food.get_size();
+  //Grr, uniform_int_distribution is inclusive at the top?  I get why,
+  //but it is different from almost every other usage.
+  std::uniform_int_distribution<std::uint32_t> dist(0, size-1);
+  for(int i=0; i<num_seeds; i++) {
+    food.set_val( dist(generator), dist(generator), true);
+  }
 }
 
 void WorldSim::iterate() {
-  std::vector<double> prev_food = food;
-
-  for(int x=0; x<width; x++) {
-    for(int y=0; y<height; y++) {
-      double ave_with_neighbors = (
-        prev_food.at(food_index(x,y)) +
-        prev_food.at(food_index(x+1,y)) +
-        prev_food.at(food_index(x-1,y)) +
-        prev_food.at(food_index(x,y-1)) +
-        prev_food.at(food_index(x,y+1))
-      ) / 5;
-
-      food.at(food_index(x,y)) = ave_with_neighbors;
-    }
-  }
+  food.growth_iteration();
 }
