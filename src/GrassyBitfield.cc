@@ -202,6 +202,42 @@ void GrassyBitfield::set_val(std::uint64_t address, bool val) {
   }
 }
 
+std::uint64_t GrassyBitfield::num_filled() const {
+  auto top_addr = get_bitfield_key(get_address(0,0), num_layers-1);
+  return num_filled(top_addr, true);
+}
+
+std::uint64_t GrassyBitfield::num_filled(std::uint64_t key, bool parent_value) const {
+  // Determine map
+  Bitfield bitfield;
+  if(bitfields.count(key)) {
+    bitfield = bitfields.at(key);
+  } else {
+    bitfield = parent_value ? -1L : 0;
+  }
+
+  auto info = unpack_bitfield_key(key);
+
+  if(info.layer>0 && has_subfields(key)) {
+    // Bitfield has at least one subfield, loop and recurse into any subfields.
+    std::uint64_t output = 0;
+    for(unsigned int loc=0; loc<64; loc++) {
+      auto subfield_key = get_subfield_key(key, loc);
+      bool value = bitfield.test(loc);
+      if(exists_or_has_subfields(subfield_key)) {
+        output += num_filled(subfield_key, value);
+      } else {
+        output += std::uint64_t(value) << (6*info.layer);
+      }
+    }
+    return output;
+
+  } else {
+    // Bitfield has no subfields, count all set bits and return.
+    return bitfield.count() << (6*info.layer);
+  }
+}
+
 
 void GrassyBitfield::growth_iteration() {
 
@@ -385,6 +421,18 @@ bool GrassyBitfield::exists_or_has_subfields(std::uint64_t key) const {
                                       info.y_min + info.field_width-1);
   auto last_possible_subfield = get_bitfield_key(top_right_corner, 0);
   return bitfields.lower_bound(key) != bitfields.upper_bound(last_possible_subfield);
+}
+
+
+bool GrassyBitfield::has_subfields(std::uint64_t key) const {
+  auto info = unpack_bitfield_key(key);
+
+  auto first_possible_subfield = get_bitfield_key(info.bottom_left_address, info.layer-1);
+
+  auto top_right_corner = get_address(info.x_min + info.field_width-1,
+                                      info.y_min + info.field_width-1);
+  auto last_possible_subfield = get_bitfield_key(top_right_corner, 0);
+  return bitfields.lower_bound(first_possible_subfield) != bitfields.upper_bound(last_possible_subfield);
 }
 
 

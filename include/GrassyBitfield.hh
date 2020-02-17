@@ -25,6 +25,7 @@ public:
   GrassyBitfield(unsigned int num_layers, bool initial_value=false,
                  bool edge_wrap=true);
 
+  std::uint64_t num_filled() const;
   bool get_val(std::uint32_t x, std::uint32_t y) const;
   void set_val(std::uint32_t x, std::uint32_t y, bool val);
 
@@ -42,7 +43,9 @@ private:
     std::map<std::uint64_t, Bitfield>& output
   ) const;
   bool exists_or_has_subfields(std::uint64_t key) const;
+  bool has_subfields(std::uint64_t key) const;
   void set_val(std::uint64_t address, bool val);
+  std::uint64_t num_filled(std::uint64_t key, bool parent_value) const;
 
   unsigned int num_layers;
   std::map<std::uint64_t, Bitfield> bitfields;
