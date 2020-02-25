@@ -79,11 +79,15 @@ var world = (function() {
         var parsed = JSON.parse(message);
         if('authenticated' in parsed) {
             display_websocket_state('Connected');
-            send_message({'food_dist_requested': true});
+            send_message({'full_map_requested': true});
         }
 
         if('food_dist' in parsed) {
             display_food_dist(parsed['food_dist']);
+        }
+
+        if('creatures' in parsed) {
+            display_creatures(parsed['creatures']);
         }
     }
 
@@ -110,11 +114,38 @@ var world = (function() {
                     dummy_ctx.fillRect(j, 7-i, 1, 1);
                 }
             }
-            console.log(canvas.height - field.y_min*y_scale);
             ctx.drawImage(dummy,
                           field.x_min*x_scale,
                           canvas.height - field.y_min*y_scale-1,
                           field.width*x_scale, -field.width*y_scale);
+        });
+    }
+
+    function display_creatures(creatures) {
+        var canvas = document.getElementById('map-display');
+        var ctx = canvas.getContext('2d');
+
+        creatures.forEach(function(creature) {
+            // TODO: Make dedicated structure for remembering world
+            // info, including size.
+            var x_pixel = creature.x * canvas.width / 64;
+            var y_pixel = canvas.height - creature.y * canvas.height / 64;
+            var radius = creature.radius * canvas.width / 64;
+
+            ctx.beginPath();
+            ctx.arc(x_pixel, y_pixel, radius, 0, 2*Math.PI, false);
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+            ctx.fill();
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = 'black';
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = 'black';
+            ctx.moveTo(x_pixel, y_pixel);
+            ctx.lineTo(x_pixel + radius*Math.cos(creature.direction), y_pixel - radius*Math.sin(creature.direction));
+            ctx.stroke();
         });
     }
 

@@ -80,18 +80,19 @@ void WorldController::worker_thread_iter(Request& req) {
      j["iterate_n_steps"] > 0) {
     int num_iter = j["iterate_n_steps"];
 
-    for(int i=0; i<num_iter; i++) {
+    for(int i=0; i<num_iter && worker_running; i++) {
       sim.iterate();
       broadcast_map_update();
-      std::this_thread::sleep_for(std::chrono::seconds(1));
+      std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
   }
 
   // If we are going to broadcast it to all connections, no need to
   // send an individual update as well.
-  if(j.count("food_dist_requested") &&
-     j["food_dist_requested"]) {
+  if(j.count("full_map_requested") &&
+     j["full_map_requested"]) {
     output_reply["food_dist"] = get_food_dist();
+    output_reply["creatures"] = get_creature_info();
   }
 
   std::lock_guard<std::mutex> lock(response_mutex);
@@ -114,6 +115,7 @@ ServerResponse WorldController::update_check() {
 void WorldController::broadcast_map_update() {
   json output_broadcast;
   output_broadcast["food_dist"] = get_food_dist();
+  output_broadcast["creatures"] = get_creature_info();
 
   std::lock_guard<std::mutex> lock(response_mutex);
   responses.push({"", output_broadcast.dump(), std::weak_ptr<void>()});
@@ -136,6 +138,24 @@ json WorldController::get_food_dist() const {
   output["food_fields"] = food_fields;
 
   return output;
+}
+
+json WorldController::get_creature_info() const {
+  std::vector<json> descriptions;
+
+  for(const auto& creature : sim.GetCreatures()) {
+    json desc;
+
+    desc["x"] = creature.get_position().X();
+    desc["y"] = creature.get_position().Y();
+    desc["direction"] = creature.get_direction();
+    desc["speed"] = creature.get_speed();
+    desc["radius"] = creature.get_radius();
+
+    descriptions.push_back(desc);
+  }
+
+  return json(descriptions);
 }
 
 void WorldController::reset_world() {

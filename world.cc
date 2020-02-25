@@ -14,6 +14,7 @@ void signal_handler(int /*sig*/) {
 
 int main() {
   WorldSim sim(2);
+  sim.SetIterationsPerGrowth(20);
 
   WebServer server(sim);
   server.start(10101);

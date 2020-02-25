@@ -120,13 +120,30 @@ GrassyBitfield::GrassyBitfield(unsigned int num_layers, bool initial_value,
   bitfields[top_addr] = initial_value ? -1L : 0;
 }
 
-unsigned int GrassyBitfield::get_size() const {
-  return 1 << (3*num_layers);
+std::uint32_t GrassyBitfield::get_size() const {
+  return 1UL << (3*num_layers);
+}
+
+std::uint64_t GrassyBitfield::get_address_wrap(std::uint32_t x, std::uint32_t y) const {
+  auto full_grid_size = this->get_size();
+
+  // If it is off the edge and edge wrapping is disabled, return invalid address.
+  if((x >= full_grid_size || y >= full_grid_size) && !this->edge_wrap) {
+    return std::uint64_t(-1);
+  }
+
+  // Adjust coordinate in case it is off the edge.
+  // The +full_grid_size is to allow for negative values cast to
+  // unsigned int.
+  x = (x + full_grid_size) % full_grid_size;
+  y = (y + full_grid_size) % full_grid_size;
+
+  return get_address(x,y);
 }
 
 
 bool GrassyBitfield::get_val(std::uint32_t x, std::uint32_t y) const {
-  auto address = get_address(x,y);
+  auto address = get_address_wrap(x,y);
 
   // Start at the lowest possible layer, then walk up to the topmost layer.
   for(unsigned int layer=0; layer<num_layers; layer++) {
@@ -143,7 +160,7 @@ bool GrassyBitfield::get_val(std::uint32_t x, std::uint32_t y) const {
 }
 
 void GrassyBitfield::set_val(std::uint32_t x, std::uint32_t y, bool val) {
-  auto address = get_address(x,y);
+  auto address = get_address_wrap(x,y);
   set_val(address, val);
 }
 
@@ -268,21 +285,8 @@ void GrassyBitfield::determine_new_growth(
   }
 
   auto info = unpack_bitfield_key(key);
-  std::uint32_t full_grid_size = 1UL << (3*num_layers);
 
-  auto get_address_wrap = [&](std::uint32_t x, std::uint32_t y) {
-    // If it is off the edge and edge wrapping is disabled, treat as
-    // empty.
-    if((x >= full_grid_size || y >= full_grid_size) && !this->edge_wrap) {
-      return std::uint64_t(-1);
-    }
 
-    // Adjust coordinate in case it is off the edge.
-    x = (x + full_grid_size) % full_grid_size;
-    y = (y + full_grid_size) % full_grid_size;
-
-    return get_address(x,y);
-  };
 
   // Find the grid on the same level or higher that contains the
   // specified point.
@@ -316,13 +320,13 @@ void GrassyBitfield::determine_new_growth(
     // subfields exists, or if any of its neighbors' subfields exist.
     auto info = unpack_bitfield_key(key);
     auto left_field = get_bitfield_key(get_address_wrap(info.x_min-1,
-                                                   info.y_min),
+                                                        info.y_min),
                                        info.layer);
     auto right_field = get_bitfield_key(get_address_wrap(info.x_min+info.field_width,
-                                                    info.y_min),
+                                                         info.y_min),
                                         info.layer);
     auto down_field = get_bitfield_key(get_address_wrap(info.x_min,
-                                                   info.y_min+info.field_width),
+                                                        info.y_min+info.field_width),
                                        info.layer);
     auto up_field = get_bitfield_key(get_address_wrap(info.x_min,info.y_min-1),
                                      info.layer);

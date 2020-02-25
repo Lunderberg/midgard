@@ -40,6 +40,7 @@ private:
   // To be called only from worker thread
   void broadcast_map_update();
   json get_food_dist() const;
+  json get_creature_info() const;
   void reset_world();
 
 

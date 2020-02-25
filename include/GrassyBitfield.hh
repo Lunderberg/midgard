@@ -33,10 +33,12 @@ public:
 
   std::vector<DrawField> get_draw_fields() const;
 
-  unsigned int get_size() const;
+  std::uint32_t get_size() const;
   unsigned int get_num_layers() const { return num_layers; }
 
 private:
+  std::uint64_t get_address_wrap(std::uint32_t x, std::uint32_t y) const;
+
   void determine_new_growth(
     std::uint64_t key,
     bool parent_value,
