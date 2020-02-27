@@ -53,8 +53,9 @@ def default_environment():
         env.Append(SHLINKFLAGS=['-undefined','dynamic_lookup'])
 
     env.Append(CCFLAGS=['-pthread','-Wall','-Wextra','-pedantic'])
-    env.Append(CXXFLAGS=['-std=c++14'])
+    env.Append(CXXFLAGS=['-std=c++17'])
     env.Append(LINKFLAGS=['-pthread'])
+    env.Append(LIBS=['stdc++fs'])
 
 
     if 'CODE_COVERAGE' in ARGUMENTS:

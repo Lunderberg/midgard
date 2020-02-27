@@ -1,5 +1,7 @@
 #include "WebServer.hh"
 
+#include <algorithm>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 
@@ -11,7 +13,8 @@ using nlohmann::json;
 WebServer::WebServer(WorldSim& sim)
   : server_running(false), stop_periodic_check(false), controller(sim) {
 
-  root_path = program_path();
+  //root_path = program_path() + "/web-serve";
+  root_path = program_path() + "/../web-serve";
 
   server.set_http_handler(
     [this](websocketpp::connection_hdl hdl) { on_http(hdl); }
@@ -53,6 +56,35 @@ void WebServer::run() {
   server.run();
 }
 
+namespace {
+std::string cat_js_files(const std::string& dir) {
+  std::vector<std::string> js_files;
+  for(auto& p : std::filesystem::directory_iterator(dir)) {
+    if(p.path().extension() == ".js") {
+      js_files.push_back(p.path());
+    }
+  }
+
+  std::sort(js_files.begin(), js_files.end());
+
+  std::vector<char> text;
+  for(auto& filename : js_files) {
+    std::ifstream ifile(filename);
+    text.insert(text.end(),
+                std::istreambuf_iterator<char>(ifile),
+                std::istreambuf_iterator<char>());
+  }
+
+  return std::string(text.begin(), text.end());
+}
+
+std::string read_file(const std::string& filename) {
+  std::ifstream ifile(filename);
+  return std::string(std::istreambuf_iterator<char>(ifile),
+                     std::istreambuf_iterator<char>());
+}
+}
+
 void WebServer::on_http(websocketpp::connection_hdl hdl) {
   auto con = server.get_con_from_hdl(hdl);
 
@@ -62,20 +94,17 @@ void WebServer::on_http(websocketpp::connection_hdl hdl) {
   }
 
 
-  //std::string filename = root_path + "/web-serve" + con->get_resource();
-  std::string filename = root_path + "/../web-serve" + con->get_resource();
-  if(filename.back() == '/') {
-    filename += "index.html";
+  if(con->get_resource() == "/world.js") {
+    con->set_body(cat_js_files(root_path + "/js"));
+
+  } else {
+    std::string filename = root_path + con->get_resource();
+    if(filename.back() == '/') {
+      filename += "index.html";
+    }
+    con->set_body(read_file(filename));
   }
-
-
-
-  std::ifstream ifile(filename);
-  auto content = std::string(std::istreambuf_iterator<char>(ifile),
-                             std::istreambuf_iterator<char>());
-
   con->set_status(websocketpp::http::status_code::ok);
-  con->set_body(content);
 }
 
 void WebServer::on_first_message(websocketpp::connection_hdl handle,
