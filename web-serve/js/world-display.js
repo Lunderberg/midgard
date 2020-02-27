@@ -1,29 +1,55 @@
+var world_state = {
+    size: null,
+    food_fields: null,
+    creatures: null,
+};
+
 function update_world_display(message) {
+    var needs_redraw = false;
+
     if('food_dist' in message) {
-        display_food_dist(message['food_dist']);
+        world_state.size = message.food_dist.size;
+        world_state.food_fields = message.food_dist.food_fields;
+        needs_redraw = true;
     }
 
     if('creatures' in message) {
-        display_creatures(message['creatures']);
+        world_state.creatures = message.creatures;
+        needs_redraw = true;
+    }
+
+    if(needs_redraw) {
+        redraw_canvas();
     }
 }
 
-function display_food_dist(food) {
+function redraw_canvas() {
     var canvas = document.getElementById('map-display');
     var ctx = canvas.getContext('2d');
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    draw_food_fields(ctx, world_state.food_fields);
+    draw_creatures(ctx, world_state.creatures);
+}
+
+
+
+function draw_food_fields(ctx) {
+    var food_fields = world_state.food_fields;
+    var size = world_state.size;
 
     var dummy = document.createElement('canvas');
     dummy.width = 8;
     dummy.height = 8;
     var dummy_ctx = dummy.getContext('2d');
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.imageSmoothingEnabled = false;
 
-    var x_scale = canvas.width / food['size'];
-    var y_scale = canvas.height / food['size'];
+    var x_scale = ctx.canvas.width / size;
+    var y_scale = ctx.canvas.height / size;
 
-    food['food_fields'].forEach(field => {
+    food_fields.forEach(field => {
         for(var i=0; i<8; i++) {
             for(var j=0; j<8; j++) {
                 var style = field.values[i][j] ? '#336600' : 'White';
@@ -33,21 +59,20 @@ function display_food_dist(food) {
         }
         ctx.drawImage(dummy,
                       field.x_min*x_scale,
-                      canvas.height - field.y_min*y_scale-1,
+                      ctx.canvas.height - field.y_min*y_scale-1,
                       field.width*x_scale, -field.width*y_scale);
     });
 }
 
-function display_creatures(creatures) {
-    var canvas = document.getElementById('map-display');
-    var ctx = canvas.getContext('2d');
+function draw_creatures(ctx) {
+    var width = ctx.canvas.width;
+    var height = ctx.canvas.height;
+    var size = world_state.size;
 
-    creatures.forEach(function(creature) {
-        // TODO: Make dedicated structure for remembering world
-        // info, including size.
-        var x_pixel = creature.x * canvas.width / 64;
-        var y_pixel = canvas.height - creature.y * canvas.height / 64;
-        var radius = creature.radius * canvas.width / 64;
+    world_state.creatures.forEach(function(creature) {
+        var x_pixel = creature.x * width / size;
+        var y_pixel = height - creature.y * height / size;
+        var radius = creature.radius * width / size;
 
         ctx.beginPath();
         ctx.arc(x_pixel, y_pixel, radius, 0, 2*Math.PI, false);
